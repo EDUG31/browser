@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Browser</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        /* Global Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f1f1f1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background-color: #ffffff;
+            padding: 10px 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .navbar input[type="text"] {
+            width: 70%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .navbar input[type="text"]:focus {
+            border-color: #0078d4;
+        }
+
+        .navbar button {
+            background-color: #0078d4;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .navbar button:hover {
+            background-color: #005a9e;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background-color: #ffffff;
+            padding: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            justify-content: flex-start;
+            align-items: center;
+            overflow-x: auto;
+            margin-bottom: 10px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            margin-right: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .tab.active {
+            background-color: #0078d4;
+            color: white;
+        }
+
+        .tab:hover {
+            background-color: #e3e3e3;
+        }
+
+        .tab-close {
+            margin-left: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .tab-close:hover {
+            color: #ff3b30;
+        }
+
+        /* Iframe to display websites */
+        iframe {
+            width: 100%;
+            height: calc(100vh - 200px); /* Adjusted height for the navbar and tabs */
+            border: none;
+            background-color: #fff;
+        }
+        
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <input type="text" id="url-input" placeholder="Search or enter URL..." onkeypress="handleSearch(event)">
+        <button onclick="openNewTab()">+ New Tab</button>
+    </div>
+
+    <!-- Tabs Section -->
+    <div class="tabs" id="tabs">
+        <div class="tab active" onclick="changeTab(event, 'about:blank')">New Tab</div>
+    </div>
+
+    <!-- Display iframe content -->
+    <iframe id="iframe" src="about:blank"></iframe>
+
+    <script>
+        const urlInput = document.getElementById('url-input');
+        const iframe = document.getElementById('iframe');
+        const tabs = document.getElementById('tabs');
+        let activeTab = 'about:blank';
+
+        // Handle the URL input to perform a search or load a URL
+        function handleSearch(event) {
+            if (event.key === 'Enter') {
+                const query = urlInput.value.trim();
+                if (query) {
+                    const searchUrl = query.startsWith('http') ? query : `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+                    loadTab(searchUrl);
+                    event.preventDefault();
+                }
+            }
+        }
+
+        // Open a new tab (blank page)
+        function openNewTab() {
+            loadTab('about:blank');
+        }
+
+        // Load a site into a new tab
+        function loadTab(url) {
+            const tabId = 'tab-' + Date.now();
+            const tab = document.createElement('div');
+            tab.classList.add('tab');
+            tab.textContent = url;
+            tab.onclick = () => changeTab(event, url);
+
+            // Add close button to tab
+            const closeBtn = document.createElement('span');
+            closeBtn.classList.add('tab-close');
+            closeBtn.innerHTML = '&times;';
+            closeBtn.onclick = (e) => closeTab(e, tab, url);
+            tab.appendChild(closeBtn);
+
+            tabs.appendChild(tab);
+
+            // Set the iframe source
+            iframe.src = url;
+
+            // Make the new tab the active tab
+            changeTab(event, url);
+        }
+
+        // Change to a specific tab
+        function changeTab(event, url) {
+            // Mark all tabs as inactive
+            const allTabs = tabs.getElementsByClassName('tab');
+            Array.from(allTabs).forEach(tab => tab.classList.remove('active'));
+
+            // Mark the clicked tab as active
+            event.target.classList.add('active');
+            iframe.src = url;
+            activeTab = url;
+        }
+
+        // Close a tab
+        function closeTab(e, tab, url) {
+            e.stopPropagation();
+            tab.remove();
+            if (activeTab === url) {
+                const firstTab = tabs.querySelector('.tab');
+                if (firstTab) {
+                    firstTab.click();
+                }
+            }
+        }
+    </script>
+
+    <!-- Register Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker
+                    .register('/service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+
+</body>
+</html>
